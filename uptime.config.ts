@@ -10,7 +10,7 @@ const pageConfig: PageConfig = {
     { link: 'https://app.gridlink.co', label: 'App', highlight: true },
   ],
   group: {
-    'GridLink Services': ['app', 'api', 'website', 'ws-gateway'],
+    'GridLink Services': ['app', 'api', 'ws-gateway'],
   },
   // Logo / favicon are referenced from /public; the brand mark is also
   // inlined in components/Header.tsx so it can pick up text color via
@@ -79,18 +79,6 @@ const workerConfig: WorkerConfig = {
       // Require literal "status":"ok" so a degraded JSON response (state != healthy)
       // still pages even though the HTTP status is 200.
       responseKeyword: '"status":"ok"',
-      timeout: 15000,
-      checkProxy: 'worker://enam',
-      checkProxyFallback: true,
-    },
-    {
-      id: 'website',
-      name: 'Website (www.gridlink.co)',
-      method: 'GET',
-      target: 'https://www.gridlink.co',
-      tooltip: 'Marketing site',
-      statusPageLink: 'https://www.gridlink.co',
-      expectedCodes: [200],
       timeout: 15000,
       checkProxy: 'worker://enam',
       checkProxyFallback: true,
