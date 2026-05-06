@@ -42,6 +42,11 @@ const pageConfig: PageConfig = {
 }
 
 const workerConfig: WorkerConfig = {
+  // Persist state every cron tick so the "Last updated" timestamp on the
+  // status page reflects the real probe time, not the last status change.
+  // Default is 3 — which makes the page look stale even though probes are
+  // running every minute.
+  kvWriteCooldownMinutes: 1,
   monitors: [
     // All probes pin to Eastern North America via a Durable Object
     // location hint — production runs on Fly.io in iad (Ashburn, VA), so
