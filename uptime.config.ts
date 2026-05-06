@@ -11,12 +11,17 @@ const pageConfig: PageConfig = {
   ],
   group: {
     'GridLink Services': ['app', 'api', 'website', 'ws-gateway'],
-    'Prober Sentinels': ['sentinel-cloudflare', 'sentinel-google', 'sentinel-fly'],
   },
 }
 
 const workerConfig: WorkerConfig = {
   monitors: [
+    // All probes pin to Eastern North America via a Durable Object
+    // location hint — production runs on Fly.io in iad (Ashburn, VA), so
+    // this gives a consistent, geographically realistic vantage point
+    // instead of whichever colo Cloudflare happens to schedule the cron in
+    // (which is what was producing the Singapore/SE Asia probes the user
+    // saw on the latency-chart hover).
     {
       id: 'app',
       name: 'App (app.gridlink.co)',
@@ -28,6 +33,8 @@ const workerConfig: WorkerConfig = {
       // healthy state for an unauthenticated probe.
       expectedCodes: [200, 307, 308],
       timeout: 15000,
+      checkProxy: 'worker://enam',
+      checkProxyFallback: true,
     },
     {
       id: 'api',
@@ -41,6 +48,8 @@ const workerConfig: WorkerConfig = {
       // still pages even though the HTTP status is 200.
       responseKeyword: '"status":"ok"',
       timeout: 15000,
+      checkProxy: 'worker://enam',
+      checkProxyFallback: true,
     },
     {
       id: 'website',
@@ -51,6 +60,8 @@ const workerConfig: WorkerConfig = {
       statusPageLink: 'https://www.gridlink.co',
       expectedCodes: [200],
       timeout: 15000,
+      checkProxy: 'worker://enam',
+      checkProxyFallback: true,
     },
     {
       id: 'ws-gateway',
@@ -60,35 +71,8 @@ const workerConfig: WorkerConfig = {
       tooltip: 'OCPP WebSocket gateway health endpoint',
       expectedCodes: [200],
       timeout: 15000,
-    },
-    // Sentinels — used to distinguish prober-network blips from real outages.
-    // If any of these go red at the same time as a service, suspect the prober.
-    {
-      id: 'sentinel-cloudflare',
-      name: 'Sentinel: Cloudflare',
-      method: 'GET',
-      target: 'https://1.1.1.1/cdn-cgi/trace',
-      tooltip: 'Prober-side egress sentinel (Cloudflare)',
-      expectedCodes: [200],
-      timeout: 8000,
-    },
-    {
-      id: 'sentinel-google',
-      name: 'Sentinel: Google',
-      method: 'GET',
-      target: 'https://www.google.com/generate_204',
-      tooltip: 'Prober-side egress sentinel (Google)',
-      expectedCodes: [204],
-      timeout: 8000,
-    },
-    {
-      id: 'sentinel-fly',
-      name: 'Sentinel: Fly.io status',
-      method: 'GET',
-      target: 'https://status.flyio.net/',
-      tooltip: 'Detects Fly-wide platform incidents',
-      expectedCodes: [200],
-      timeout: 8000,
+      checkProxy: 'worker://enam',
+      checkProxyFallback: true,
     },
   ],
   notification: {
@@ -108,9 +92,6 @@ const workerConfig: WorkerConfig = {
     // Two consecutive failures before paging — kills the single-probe-blip
     // false positives that plagued Kuma (which had maxretries=0).
     gracePeriod: 2,
-    // Sentinels are diagnostic, not user-facing. Don't page on them — they
-    // exist so on-call can correlate at-a-glance on the status page.
-    skipNotificationIds: ['sentinel-cloudflare', 'sentinel-google', 'sentinel-fly'],
     skipErrorChangeNotification: true,
   },
 }
