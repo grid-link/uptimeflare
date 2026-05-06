@@ -29,15 +29,18 @@ export default function DetailBar({
   const currentTime = Math.round(Date.now() / 1000)
   const montiorStartTime = state.incident[monitor.id][0].start[0]
 
-  const todayStart = new Date()
-  todayStart.setHours(0, 0, 0, 0)
+  // Each bar is 1 hour wide; 90 bars = ~3.75 days of recent history. Aligns to
+  // the top of the current hour so the rightmost bar is "now".
+  const HOUR_SECONDS = 3600
+  const currentHourStart =
+    Math.floor(Math.round(Date.now() / 1000) / HOUR_SECONDS) * HOUR_SECONDS
 
   for (let i = 89; i >= 0; i--) {
-    const dayStart = Math.round(todayStart.getTime() / 1000) - i * 86400
-    const dayEnd = dayStart + 86400
+    const bucketStart = currentHourStart - i * HOUR_SECONDS
+    const bucketEnd = bucketStart + HOUR_SECONDS
 
-    const dayMonitorTime = overlapLen(dayStart, dayEnd, montiorStartTime, currentTime)
-    let dayDownTime = 0
+    const bucketMonitorTime = overlapLen(bucketStart, bucketEnd, montiorStartTime, currentTime)
+    let bucketDownTime = 0
 
     let incidentReasons: string[] = []
 
@@ -45,19 +48,19 @@ export default function DetailBar({
       const incidentStart = incident.start[0]
       const incidentEnd = incident.end ?? currentTime
 
-      const overlap = overlapLen(dayStart, dayEnd, incidentStart, incidentEnd)
-      dayDownTime += overlap
+      const overlap = overlapLen(bucketStart, bucketEnd, incidentStart, incidentEnd)
+      bucketDownTime += overlap
 
-      // Incident history for the day
+      // Incident history for the bucket
       if (overlap > 0) {
         for (let i = 0; i < incident.error.length; i++) {
           let partStart = incident.start[i]
           let partEnd =
             i === incident.error.length - 1 ? incident.end ?? currentTime : incident.start[i + 1]
-          partStart = Math.max(partStart, dayStart)
-          partEnd = Math.min(partEnd, dayEnd)
+          partStart = Math.max(partStart, bucketStart)
+          partEnd = Math.min(partEnd, bucketEnd)
 
-          if (overlapLen(dayStart, dayEnd, partStart, partEnd) > 0) {
+          if (overlapLen(bucketStart, bucketEnd, partStart, partEnd) > 0) {
             const startStr = new Date(partStart * 1000).toLocaleTimeString([], {
               hour: '2-digit',
               minute: '2-digit',
@@ -72,7 +75,17 @@ export default function DetailBar({
       }
     }
 
-    const dayPercent = (((dayMonitorTime - dayDownTime) / dayMonitorTime) * 100).toPrecision(4)
+    const bucketLabel = new Date(bucketStart * 1000).toLocaleString([], {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+
+    const bucketPercent = (
+      ((bucketMonitorTime - bucketDownTime) / bucketMonitorTime) *
+      100
+    ).toPrecision(4)
 
     uptimePercentBars.push(
       <Tooltip
@@ -80,20 +93,20 @@ export default function DetailBar({
         key={i}
         events={{ hover: true, focus: false, touch: true }}
         label={
-          Number.isNaN(Number(dayPercent)) ? (
+          Number.isNaN(Number(bucketPercent)) ? (
             t('No Data')
           ) : (
             <>
               <div>
                 {t('percent at date', {
-                  percent: dayPercent,
-                  date: new Date(dayStart * 1000).toLocaleDateString(),
+                  percent: bucketPercent,
+                  date: bucketLabel,
                 })}
               </div>
-              {dayDownTime > 0 && (
+              {bucketDownTime > 0 && (
                 <div>
                   {t('Down for', {
-                    duration: moment.preciseDiff(moment(0), moment(dayDownTime * 1000)),
+                    duration: moment.preciseDiff(moment(0), moment(bucketDownTime * 1000)),
                   })}
                 </div>
               )}
@@ -105,17 +118,17 @@ export default function DetailBar({
           style={{
             height: '20px',
             width: '7px',
-            background: getColor(dayPercent, false),
+            background: getColor(bucketPercent, false),
             borderRadius: '2px',
             marginLeft: '1px',
             marginRight: '1px',
           }}
           onClick={() => {
-            if (dayDownTime > 0) {
+            if (bucketDownTime > 0) {
               setModalTitle(
                 t('incidents at', {
                   name: monitor.name,
-                  date: new Date(dayStart * 1000).toLocaleDateString(),
+                  date: bucketLabel,
                 })
               )
               setModelContent(

@@ -34,11 +34,39 @@ export default function DetailChart({
   state: MonitorState
 }) {
   const { t } = useTranslation('common')
-  const latencyData = state.latency[monitor.id].map((point) => ({
-    x: point.time * 1000,
-    y: point.ping,
-    loc: point.loc,
-  }))
+
+  // Bucket raw probe samples (one per minute) into 5-minute windows. Each
+  // bucket plots the average latency of the probes in it; the most-frequent
+  // probe location for that bucket is shown in the tooltip. Smooths the line
+  // from per-minute jitter and reduces tooltip noise to ~12 points/hour.
+  const BUCKET_SECONDS = 300
+  type RawSample = { time: number; ping: number; loc: string }
+  const buckets = new Map<number, RawSample[]>()
+  for (const sample of state.latency[monitor.id] as RawSample[]) {
+    const bucketKey = Math.floor(sample.time / BUCKET_SECONDS) * BUCKET_SECONDS
+    let bucket = buckets.get(bucketKey)
+    if (!bucket) {
+      bucket = []
+      buckets.set(bucketKey, bucket)
+    }
+    bucket.push(sample)
+  }
+
+  const latencyData = Array.from(buckets.entries())
+    .sort(([a], [b]) => a - b)
+    .map(([bucketStart, samples]) => {
+      const avgPing = Math.round(
+        samples.reduce((acc, s) => acc + s.ping, 0) / samples.length
+      )
+      const locCounts = new Map<string, number>()
+      for (const s of samples) locCounts.set(s.loc, (locCounts.get(s.loc) ?? 0) + 1)
+      const dominantLoc = Array.from(locCounts.entries()).sort((a, b) => b[1] - a[1])[0][0]
+      return {
+        x: bucketStart * 1000,
+        y: avgPing,
+        loc: dominantLoc,
+      }
+    })
 
   let data = {
     datasets: [
