@@ -1,15 +1,57 @@
 .header {
-  height: rem(56px);
-  margin-bottom: rem(100px);
+  height: rem(64px);
+  margin-bottom: rem(72px);
   background-color: var(--mantine-color-body);
-  border-bottom: rem(1px) solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+  border-bottom: rem(1px) solid light-dark(#D8D8D4, rgba(245, 244, 241, 0.08));
 }
 
 .inner {
-  height: rem(56px);
+  height: rem(64px);
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: rem(10px);
+  text-decoration: none;
+  color: light-dark(#0F0F0F, #F5F4F1);
+  transition: color 150ms ease;
+}
+
+.brand:hover {
+  color: #00844A;
+}
+
+.brandMark {
+  width: rem(22px);
+  height: rem(22px);
+  flex-shrink: 0;
+}
+
+.brandWordmark {
+  font-family: 'Syne', 'Outfit', sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-size: rem(20px);
+  line-height: 1;
+}
+
+.brandSep {
+  color: light-dark(#D8D8D4, rgba(245, 244, 241, 0.2));
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 400;
+}
+
+.brandStatus {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: rem(10px);
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: light-dark(#555550, rgba(245, 244, 241, 0.55));
 }
 
 .link {
@@ -18,16 +60,29 @@
   padding: rem(8px) rem(12px);
   border-radius: var(--mantine-radius-sm);
   text-decoration: none;
-  color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-0));
-  font-size: var(--mantine-font-size-sm);
+  color: light-dark(#555550, rgba(245, 244, 241, 0.7));
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: rem(11px);
   font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  border: rem(1px) solid transparent;
+  transition: color 150ms ease, border-color 150ms ease, background-color 150ms ease;
 
   @mixin hover {
-    background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6));
+    color: light-dark(#0F0F0F, #F5F4F1);
+    border-color: light-dark(#D8D8D4, rgba(245, 244, 241, 0.2));
   }
 
   [data-mantine-color-scheme] &[data-active] {
-    background-color: var(--mantine-color-blue-filled);
-    color: var(--mantine-color-white);
+    background-color: #0F0F0F;
+    color: #00E676;
+    border-color: #0F0F0F;
+  }
+
+  [data-mantine-color-scheme='dark'] &[data-active] {
+    background-color: #00E676;
+    color: #0F0F0F;
+    border-color: #00E676;
   }
 }

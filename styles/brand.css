@@ -1,0 +1,44 @@
+/* GridLink brand tokens layered on top of Mantine. Mirrors the @theme block
+   in apps/website/src/styles/global.css so the status page reads as the same
+   product. */
+
+:root {
+  --gl-bg: #F5F4F1;
+  --gl-ink: #0F0F0F;
+  --gl-accent: #00E676;
+  --gl-accent-dark: #00844A;
+  --gl-border-dim: #D8D8D4;
+  --gl-mono-label: #555550;
+  --gl-surface: #EEEEE9;
+}
+
+[data-mantine-color-scheme='light'] body {
+  background-color: var(--gl-bg);
+  color: var(--gl-ink);
+}
+
+[data-mantine-color-scheme='dark'] body {
+  background-color: var(--gl-ink);
+  color: var(--gl-bg);
+}
+
+.gl-mono-label {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gl-mono-label);
+}
+
+[data-mantine-color-scheme='dark'] .gl-mono-label {
+  color: rgba(245, 244, 241, 0.5);
+}
+
+.gl-wordmark {
+  font-family: 'Syne', 'Outfit', sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-size: 1.25rem;
+  line-height: 1;
+}
