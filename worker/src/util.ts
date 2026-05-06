@@ -79,19 +79,33 @@ function templateWebhookPlayload(payload: any, message: string) {
   }
 }
 
-async function webhookNotify(webhook: WebhookConfig, message: string) {
+async function webhookNotify(webhook: WebhookConfig, message: string, env?: any) {
   if (Array.isArray(webhook)) {
     for (const w of webhook) {
-      await webhookNotify(w, message)
+      await webhookNotify(w, message, env)
     }
     return
   }
 
+  // Allow `url: 'env:SLACK_WEBHOOK_URL'` to resolve from the Worker's bound
+  // secrets so the actual webhook URL never has to live in source.
+  let resolvedUrl = webhook.url
+  if (resolvedUrl.startsWith('env:')) {
+    const envVarName = resolvedUrl.slice(4)
+    const fromEnv = env?.[envVarName]
+    if (typeof fromEnv === 'string' && fromEnv.length > 0) {
+      resolvedUrl = fromEnv
+    } else {
+      console.log(`Webhook URL references env:${envVarName} but binding is missing/empty; skipping`)
+      return
+    }
+  }
+
   console.log(
-    'Sending webhook notification: ' + JSON.stringify(message) + ' to webhook ' + webhook.url
+    'Sending webhook notification: ' + JSON.stringify(message) + ' to webhook ' + resolvedUrl
   )
   try {
-    let url = webhook.url
+    let url = resolvedUrl
     let method = webhook.method
     let headers = new Headers(webhook.headers as any)
     let payloadTemplated: { [key: string]: string | number } = JSON.parse(
@@ -152,7 +166,8 @@ const formatAndNotify = async (
   isUp: boolean,
   timeIncidentStart: number,
   timeNow: number,
-  reason: string
+  reason: string,
+  env?: any
 ) => {
   // Skip notification if monitor is in the skip list
   const skipList = workerConfig.notification?.skipNotificationIds
@@ -185,7 +200,7 @@ const formatAndNotify = async (
       reason,
       workerConfig.notification?.timeZone ?? 'Etc/GMT'
     )
-    await webhookNotify(workerConfig.notification.webhook, notification)
+    await webhookNotify(workerConfig.notification.webhook, notification, env)
   } else {
     console.log(`Webhook not set, skipping notification for ${monitor.name}`)
   }
