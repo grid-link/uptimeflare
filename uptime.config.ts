@@ -10,7 +10,8 @@ const pageConfig: PageConfig = {
     { link: 'https://app.gridlink.co', label: 'App', highlight: true },
   ],
   group: {
-    'GridLink Services': ['app', 'api', 'ws-gateway'],
+    'GridLink Services': ['app', 'api', 'ws-gateway', 'agents'],
+    'Platform': ['status'],
   },
   // Logo / favicon are referenced from /public; the brand mark is also
   // inlined in components/Header.tsx so it can pick up text color via
@@ -64,6 +65,14 @@ const workerConfig: WorkerConfig = {
       // Unauthenticated GET to / returns 307 → /api/auth/login. That IS the
       // healthy state for an unauthenticated probe.
       expectedCodes: [200, 307, 308],
+      // Require a marker only a correctly-built SSR app shell emits: the
+      // document <title>GridLink CSMS</title>. A 200 alone can't distinguish a
+      // healthy shell from a blank/error page, a Cloudflare interstitial, or a
+      // broken build serving an empty document — all of which would still be
+      // 2xx. This keyword forces the probe to actually receive the rendered
+      // shell HTML. (Deliberately NOT a generic word like "GridLink", which
+      // appears in error pages/footers too.)
+      responseKeyword: 'GridLink CSMS',
       timeout: 15000,
       checkProxy: 'worker://enam',
       checkProxyFallback: true,
@@ -89,6 +98,33 @@ const workerConfig: WorkerConfig = {
       method: 'GET',
       target: 'https://gridlink-ws-gateway.fly.dev/health',
       tooltip: 'OCPP WebSocket gateway health endpoint',
+      expectedCodes: [200],
+      timeout: 15000,
+      checkProxy: 'worker://enam',
+      checkProxyFallback: true,
+    },
+    {
+      id: 'agents',
+      name: 'Agents Webhooks (agents.gridlink.co)',
+      method: 'GET',
+      target: 'https://agents.gridlink.co/webhooks/health',
+      tooltip: 'Agents webhook receiver health endpoint',
+      statusPageLink: 'https://agents.gridlink.co/webhooks/health',
+      expectedCodes: [200],
+      // Health endpoint returns {"ok":true}; require it so a 200 from an
+      // unrelated/misrouted handler still pages.
+      responseKeyword: '"ok":true',
+      timeout: 15000,
+      checkProxy: 'worker://enam',
+      checkProxyFallback: true,
+    },
+    {
+      id: 'status',
+      name: 'Status Page (status.gridlink.co)',
+      method: 'GET',
+      target: 'https://status.gridlink.co',
+      tooltip: 'This status page — catches CF/DNS/edge failures on status.gridlink.co itself',
+      statusPageLink: 'https://status.gridlink.co',
       expectedCodes: [200],
       timeout: 15000,
       checkProxy: 'worker://enam',
